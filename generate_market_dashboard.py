@@ -8,12 +8,13 @@ from typing import Any
 
 from openpyxl import load_workbook
 
+from app_paths import workbook_path
 from exchange_rates import ensure_exchange_rates, convert_record_to_pln, read_exchange_rates, ExchangeRateError
 from biomass_data import read_transactions, read_tenders
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_WORKBOOK = ROOT / "DataMaster.xlsx"
+DEFAULT_WORKBOOK = workbook_path(ROOT)
 DEFAULT_TEMPLATE = ROOT / "market_dashboard_template.html"
 DEFAULT_OUTPUT = ROOT / "market_dashboard.html"
 CHARTJS_SCRIPT = ROOT / "vendor" / "chart.umd.min.js"
