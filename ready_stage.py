@@ -1,6 +1,6 @@
 from biomass_import import deadline_is_open
+from app_paths import report_output_directory
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from generate_market_dashboard import render_dashboard
 
@@ -8,6 +8,7 @@ from review_stage import build_dashboard_preview
 from preview_tables import show_market_tables
 from workbook_access import show_workbook_access_error
 from report_pdf import generate_report_pdf, PdfGenerationError
+from report_storage import save_dashboard_html, save_report_pdf
 from biomass_data import read_transactions, as_date, read_tenders, SHEET, TENDER_SHEET
 
 
@@ -30,33 +31,63 @@ def show_ready_page(workbook_path: Path) -> None:
     else:
         st.info("Dane dla wybranego raportu znajdują się już w pliku DataMaster.xlsx.")
     try:
-        with TemporaryDirectory() as directory:
+        report_date = st.session_state["report_date"]
+        output_directory = report_output_directory()
+        cache_key = (
+            str(workbook_path.resolve()),
+            workbook_path.stat().st_mtime_ns,
+            report_date.isoformat(),
+            str(output_directory),
+        )
+        saved_report = st.session_state.get("_saved_report")
+        if saved_report is None or saved_report["cache_key"] != cache_key:
+            output_directory.mkdir(parents=True, exist_ok=True)
             output = render_dashboard(
-                workbook_path, output_path=Path(directory) / "dashboard.html",
-                report_date=st.session_state["report_date"],
+                workbook_path,
+                output_path=output_directory / "market_dashboard.html",
+                report_date=report_date,
             )
             dashboard_html = output.read_bytes()
+            _, archived_html = save_dashboard_html(
+                dashboard_html, report_date, output_directory
+            )
+            saved_report = {
+                "cache_key": cache_key,
+                "html_path": archived_html,
+                "pdf_path": None,
+                "pdf_error": None,
+            }
+            st.session_state["_saved_report"] = saved_report
+            try:
+                with st.spinner("Przygotowywanie PDF..."):
+                    pdf = generate_report_pdf(dashboard_html.decode("utf-8"))
+            except PdfGenerationError as error:
+                saved_report["pdf_error"] = str(error)
+            else:
+                saved_report["pdf_path"] = save_report_pdf(pdf, archived_html)
+        dashboard_html = Path(saved_report["html_path"]).read_bytes()
     except PermissionError:
         show_workbook_access_error()
     except (OSError, ValueError, KeyError) as error:
         st.error(f"Nie udało się przygotować dashboardu: {error}")
     else:
-        st.success("Dashboard jest gotowy do pobrania.")
-        filename = f"raport energetyczny {st.session_state['report_date'].isoformat()}"
+        st.success(
+            f"Dashboard zapisano: {output_directory / 'market_dashboard.html'}"
+            f" - archiwum: {saved_report['html_path'].parent}"
+        )
+        filename = f"raport energetyczny {report_date.isoformat()}"
         html_column, pdf_column = st.columns(2)
         html_column.download_button(
             "Pobierz dashboard HTML", data=dashboard_html,
             file_name=f"{filename}.html", mime="text/html", type="primary",
         )
-        try:
-            with st.spinner("Przygotowywanie PDF…"):
-                pdf = generate_report_pdf(dashboard_html.decode("utf-8"))
-        except PdfGenerationError as error:
+        if saved_report["pdf_error"] is not None:
             pdf_column.button("Pobierz PDF", disabled=True)
-            st.warning(str(error))
+            st.warning(saved_report["pdf_error"])
         else:
             pdf_column.download_button(
-                "Pobierz PDF", data=pdf, file_name=f"{filename}.pdf",
+                "Pobierz PDF", data=Path(saved_report["pdf_path"]).read_bytes(),
+                file_name=f"{filename}.pdf",
                 mime="application/pdf", type="primary",
             )
 
@@ -132,5 +163,6 @@ def show_ready_page(workbook_path: Path) -> None:
         ], hide_index=True, width="stretch")
 
     if st.button("Wróć do wyboru dat"):
+        st.session_state.pop("_saved_report", None)
         st.session_state["page"] = "dates"
         st.rerun()

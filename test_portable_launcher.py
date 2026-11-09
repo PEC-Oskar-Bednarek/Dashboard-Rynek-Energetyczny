@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
-from app_paths import APP_DIR, workbook_path
+from app_paths import APP_DIR, report_output_directory, workbook_path
 
 _spec = importlib.util.spec_from_file_location('portable_launcher', Path(__file__).parent/'packaging'/'launcher.py')
 launcher = importlib.util.module_from_spec(_spec)
@@ -42,8 +42,12 @@ class PortableLauncherTests(unittest.TestCase):
     def test_default_and_portable_paths(self):
         with patch.dict(os.environ,{},clear=False):
             os.environ.pop('ENERGY_REPORT_DATA_DIR',None)
+            os.environ.pop('ENERGY_REPORT_OUTPUT_DIR',None)
             self.assertEqual(workbook_path(),APP_DIR/'DataMaster.xlsx')
             self.assertEqual(workbook_path(Path('/tmp/example')),Path('/tmp/example')/'DataMaster.xlsx')
+            self.assertEqual(report_output_directory(),APP_DIR)
         with TemporaryDirectory(prefix='dane ł ') as directory:
-            with patch.dict(os.environ,{'ENERGY_REPORT_DATA_DIR':directory}):
+            with patch.dict(os.environ,{'ENERGY_REPORT_DATA_DIR':directory,
+                                        'ENERGY_REPORT_OUTPUT_DIR':directory}):
                 self.assertEqual(workbook_path(),Path(directory).resolve()/'DataMaster.xlsx')
+                self.assertEqual(report_output_directory(),Path(directory).resolve())

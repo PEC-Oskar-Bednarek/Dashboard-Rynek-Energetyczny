@@ -109,6 +109,7 @@ def main(smoke_test=False) -> int:
         if not runtime.is_file():
             raise FileNotFoundError('Brakuje runtime/python.exe. Rozpakuj całą paczkę ZIP.')
         environment = dict(os.environ, ENERGY_REPORT_DATA_DIR=str(DATA),
+                           ENERGY_REPORT_OUTPUT_DIR=str(ROOT),
                            PLAYWRIGHT_BROWSERS_PATH=str(ROOT / 'runtime' / 'browsers'),
                            PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
         port = free_port()

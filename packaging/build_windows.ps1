@@ -10,7 +10,9 @@ if (-not $OutputDirectory) { $OutputDirectory = Join-Path $ProjectRoot "dist" }
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $OutputDirectory = (Resolve-Path $OutputDirectory).Path
 $PackageRoot = Join-Path $OutputDirectory "Raport_energetyczny_Windows"
-if (Test-Path (Join-Path $PackageRoot "data")) {
+if ((Test-Path (Join-Path $PackageRoot "data")) -or
+    (Test-Path (Join-Path $PackageRoot "raporty")) -or
+    (Test-Path (Join-Path $PackageRoot "market_dashboard.html"))) {
     throw "Folder poprzedniej paczki zawiera dane uzytkownika. Wybierz inny OutputDirectory."
 }
 if (Test-Path $PackageRoot) { Remove-Item $PackageRoot -Recurse -Force }

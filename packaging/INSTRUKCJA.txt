@@ -13,6 +13,13 @@ DANE
 Excel: data\DataMaster.xlsx
 Kopie zapasowe: data\backups (do 30 ostatnich wersji)
 Dziennik błędów: data\logs\app.log
+Archiwalne raporty HTML i PDF: raporty\
+Aktualny dashboard HTML: market_dashboard.html (w katalogu głównym)
+
+Każde przygotowanie raportu zapisuje osobne pliki HTML i PDF w folderze raporty.
+Interaktywny dashboard market_dashboard.html jest nadpisywany przy kolejnym
+przygotowaniu raportu. Folder raporty i plik dashboardu przechowuj razem z data
+podczas aktualizacji aplikacji.
 
 Przy pierwszym uruchomieniu aplikacja tworzy plik danych z dołączonej wersji
 startowej. Istniejącego data\DataMaster.xlsx nie zastępuje. Własny DataMaster.xlsx

@@ -8,3 +8,8 @@ APP_DIR = Path(__file__).resolve().parent
 def workbook_path(default_directory: Path = APP_DIR) -> Path:
     directory = os.environ.get('ENERGY_REPORT_DATA_DIR')
     return (Path(directory).expanduser().resolve() if directory else Path(default_directory)) / 'DataMaster.xlsx'
+
+
+def report_output_directory(default_directory: Path = APP_DIR) -> Path:
+    directory = os.environ.get('ENERGY_REPORT_OUTPUT_DIR')
+    return Path(directory).expanduser().resolve() if directory else Path(default_directory).resolve()
